@@ -1,72 +1,49 @@
-# Restaurant Rating Prediction 🍽️
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+df = pd.read_csv(r"C:\Users\sarve\Downloads\Dataset .csv")
+df.drop([
+    'Restaurant ID',
+    'Restaurant Name',
+    'Address',
+    'Locality Verbose',
+    'Rating color',
+    'Rating text',
+    'Currency'
+], axis=1, inplace=True)
+df.fillna(df.mean(numeric_only=True), inplace=True)
+df.fillna(df.mode().iloc[0], inplace=True)
+label_encoders = {}
+categorical_cols = df.select_dtypes(include=['object']).columns
 
-Predicting restaurant ratings using machine learning to understand what influences how people rate restaurants.
+for col in categorical_cols:
+    le = LabelEncoder()
+    df[col] = le.fit_transform(df[col])
+    label_encoders[col] = le
+X = df.drop("Aggregate rating", axis=1)
+y = df["Aggregate rating"]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+lr_pred = lr.predict(X_test)
+dt = DecisionTreeRegressor(random_state=42)
+dt.fit(X_train, y_train)
+dt_pred = dt.predict(X_test)
+print("Linear Regression Performance:")
+print("Mean Squared Error:", mean_squared_error(y_test, lr_pred))
+print("R-squared Score:", r2_score(y_test, lr_pred))
 
----
-
-## 🚀 Project Overview
-This project aims to predict the **aggregate rating** of restaurants based on various features like location, cuisine type, cost for two, and votes. It demonstrates **data preprocessing, encoding categorical data, training regression models**, and analyzing feature importance.
-
----
-
-## 🗂 Dataset
-The dataset contains:
-- Restaurant location and locality
-- Cuisine type
-- Cost for two
-- Votes
-- Aggregate ratings
-
-Unnecessary columns like `Restaurant ID`, `Restaurant Name`, `Address`, `Currency`, and textual ratings are removed during preprocessing.
-
----
-
-## 🔧 Key Steps
-
-### 1️⃣ Data Preprocessing
-- Drop irrelevant columns.
-- Handle missing values:
-  - Numeric → replaced with mean
-  - Categorical → replaced with mode
-- Encode categorical features using `LabelEncoder`.
-
-### 2️⃣ Model Training
-- Split data: 80% training, 20% testing.
-- Train regression models:
-  - **Linear Regression**
-  - **Decision Tree Regression**
-
-### 3️⃣ Model Evaluation
-- Metrics used:
-  - Mean Squared Error (MSE)
-  - R² Score
-- Compare model performance.
-
-### 4️⃣ Feature Analysis
-- Use Decision Tree to find **top features** affecting restaurant ratings (e.g., votes, cost, type of cuisine).
-
----
-
-## ⚡ How to Run
-1. Clone this repository.
-2. Place your dataset CSV file and update the path in the script.
-3. Install dependencies:
-
-4. pip install pandas numpy scikit-learn
-Run the script:
-
-python restaurant_rating_prediction.py
-
-📊 Insights
-
-Machine learning can effectively predict restaurant ratings.
-
-Decision Tree Regression helps reveal the most influential features, giving insights for restaurant owners and analysts.
-
-💡Future Improvements
-
-Use advanced models like Random Forest or XGBoost for better accuracy.
-
-Add visualizations for feature importance and predicted vs actual ratings.
-
-Deploy as a web app for real-time rating predictions.
+print("\nDecision Tree Regression Performance:")
+print("Mean Squared Error:", mean_squared_error(y_test, dt_pred))
+print("R-squared Score:", r2_score(y_test, dt_pred))
+feature_importance = pd.Series(
+    dt.feature_importances_, index=X.columns
+).sort_values(ascending=False)
+print("\nMost Influential Features Affecting Restaurant Ratings:")
+print(feature_importance.head(10))
